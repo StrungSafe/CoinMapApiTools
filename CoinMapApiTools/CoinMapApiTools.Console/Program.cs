@@ -106,7 +106,7 @@
 
         private static void WriteVenuesToFile(VenueDetails[] venues)
         {
-            string venuesCsv = string.Empty;
+            string venuesCsv = $"Id,Name,Email,Country{Environment.NewLine}";
 
             foreach (VenueDetails venueDetails in venues)
             {
