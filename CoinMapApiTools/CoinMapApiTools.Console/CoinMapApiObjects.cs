@@ -5,6 +5,11 @@
         public Venue[] Venues { get; set; }
     }
 
+    public class VenueDetails
+    {
+        public Venue Venue { get; set; }
+    }
+
     public class Venue
     {
         public string Country { get; set; }

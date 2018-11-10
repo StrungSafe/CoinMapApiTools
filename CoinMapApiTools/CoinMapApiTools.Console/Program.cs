@@ -11,75 +11,119 @@
     {
         public static void Main(string[] args)
         {
-            var program = new Program();
-            program.Run();
-        }
-
-        public void Run()
-        {
-            VenueList venues = GetVenues();
-
-            var venuesWithEmail = new List<Venue>();
-
-            foreach (Venue venue in venues.Venues)
+            try
             {
-                Venue venueDetail = GetVenue(venue.Id);
-
-                if (string.IsNullOrWhiteSpace(venueDetail.Email))
-                {
-                    continue;
-                }
-
-                venuesWithEmail.Add(venueDetail);
+                Run();
             }
-
-            WriteVenuesToFile(venuesWithEmail.ToArray());
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                Exit();
+            }
         }
 
-        private Uri GetUri()
+        private static void Exit()
+        {
+            Console.WriteLine("Press <enter> to exit.");
+            Console.ReadLine();
+        }
+
+        private static Uri GetUri()
         {
             return new Uri(ConfigurationManager.AppSettings["uri"]);
         }
 
-        private Venue GetVenue(int venueId)
+        private static VenueDetails GetVenue(int venueId)
         {
             var uri = new Uri(GetUri(), venueId.ToString());
 
             string venue = HttpGet(uri);
 
-            return JsonConvert.DeserializeObject<Venue>(venue);
+            return JsonConvert.DeserializeObject<VenueDetails>(venue);
         }
 
-        private VenueList GetVenues()
+        private static VenueList GetVenues()
         {
             string venues = HttpGet(GetUri());
 
             return JsonConvert.DeserializeObject<VenueList>(venues);
         }
 
-        private string HttpGet(Uri uri)
+        private static string HttpGet(Uri uri)
         {
-            WebRequest request = WebRequest.Create(uri);
-
-            using (WebResponse response = request.GetResponse())
-            using (Stream responseStream = response.GetResponseStream())
-            using (var streamReader =
-                new StreamReader(responseStream ?? throw new ArgumentNullException(nameof(responseStream))))
+            try
             {
-                return streamReader.ReadToEnd();
+                WebRequest request = WebRequest.Create(uri);
+
+                using (WebResponse response = request.GetResponse())
+                using (Stream responseStream = response.GetResponseStream())
+                using (var streamReader =
+                    new StreamReader(responseStream ?? throw new ArgumentNullException(nameof(responseStream))))
+                {
+                    return streamReader.ReadToEnd();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return string.Empty;
             }
         }
 
-        private void WriteVenuesToFile(Venue[] venues)
+        private static void Run()
+        {
+            var venuesWithEmail = new List<VenueDetails>();
+
+            VenueList venues = GetVenues();
+
+            if (venues == null)
+            {
+                Console.WriteLine("No venues returned.");
+                Exit();
+                return;
+            }
+
+            int venuesLength = venues.Venues.Length;
+
+            for (var index = 0; index < venuesLength; index++)
+            {
+                Console.WriteLine($"Getting venue details {index + 1} of {venuesLength}...");
+
+                VenueDetails venueDetails = GetVenue(venues.Venues[index].Id);
+
+                if (venueDetails == null)
+                {
+                    continue;
+                }
+
+                venuesWithEmail.Add(venueDetails);
+            }
+
+            WriteVenuesToFile(venuesWithEmail.ToArray());
+
+            Exit();
+        }
+
+        private static void WriteVenuesToFile(VenueDetails[] venues)
         {
             string venuesCsv = string.Empty;
 
-            foreach (Venue venue in venues)
+            foreach (VenueDetails venueDetails in venues)
             {
+                Venue venue = venueDetails.Venue;
                 venuesCsv += $"{venue.Id},{venue.Name},{venue.Email},{venue.Country}{Environment.NewLine}";
             }
 
-            File.WriteAllText(ConfigurationManager.AppSettings["output"], venuesCsv);
+            string directory = ConfigurationManager.AppSettings["output"];
+
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            string path = Path.Combine(directory, "Venues.csv");
+
+            File.WriteAllText(path, venuesCsv);
         }
     }
 }
