@@ -1,10 +1,11 @@
-﻿using System;
-using System.Configuration;
-using System.IO;
-using System.Net;
-
-namespace CoinMapApiTools.Console
+﻿namespace CoinMapApiTools.Console
 {
+    using System;
+    using System.Configuration;
+    using System.IO;
+    using System.Net;
+    using Newtonsoft.Json;
+
     public class Program
     {
         public static void Main(string[] args)
@@ -15,18 +16,20 @@ namespace CoinMapApiTools.Console
 
         public void Run()
         {
-            var venues = GetVenues();
+            VenueList venues = GetVenues();
         }
 
-        private string GetVenues()
+        private VenueList GetVenues()
         {
-            var request = WebRequest.Create(ConfigurationManager.AppSettings["url"]);
+            WebRequest request = WebRequest.Create(ConfigurationManager.AppSettings["url"]);
 
-            using (var response = request.GetResponse())
-            using (var responseStream = response.GetResponseStream())
-            using (var streamReader = new StreamReader(responseStream ?? throw new ArgumentNullException(nameof(responseStream))))
+            using (WebResponse response = request.GetResponse())
+            using (Stream responseStream = response.GetResponseStream())
+            using (var streamReader =
+                new StreamReader(responseStream ?? throw new ArgumentNullException(nameof(responseStream))))
             {
-                return streamReader.ReadToEnd();
+                string venues = streamReader.ReadToEnd();
+                return JsonConvert.DeserializeObject<VenueList>(venues);
             }
         }
     }
