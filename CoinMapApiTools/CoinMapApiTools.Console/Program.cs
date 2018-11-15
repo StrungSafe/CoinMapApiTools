@@ -18,8 +18,9 @@
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                Exit();
             }
+
+            Exit();
         }
 
         private static void Exit()
@@ -40,6 +41,25 @@
             string venue = HttpGet(uri);
 
             return JsonConvert.DeserializeObject<VenueDetails>(venue);
+        }
+
+        private static void GetVenueDetails(VenueList venues, List<VenueDetails> venueDetailsList)
+        {
+            int venuesLength = venues.Venues.Length;
+
+            for (var index = 0; index < venuesLength; index++)
+            {
+                Console.WriteLine($"Getting venue details {index + 1} of {venuesLength}...");
+
+                VenueDetails venueDetails = GetVenue(venues.Venues[index].Id);
+
+                if (venueDetails == null)
+                {
+                    continue;
+                }
+
+                venueDetailsList.Add(venueDetails);
+            }
         }
 
         private static VenueList GetVenues()
@@ -72,36 +92,18 @@
 
         private static void Run()
         {
-            var venuesWithEmail = new List<VenueDetails>();
+            var venueDetailsList = new List<VenueDetails>();
 
             VenueList venues = GetVenues();
 
             if (venues == null)
             {
                 Console.WriteLine("No venues returned.");
-                Exit();
                 return;
             }
 
-            int venuesLength = venues.Venues.Length;
-
-            for (var index = 0; index < venuesLength; index++)
-            {
-                Console.WriteLine($"Getting venue details {index + 1} of {venuesLength}...");
-
-                VenueDetails venueDetails = GetVenue(venues.Venues[index].Id);
-
-                if (venueDetails == null)
-                {
-                    continue;
-                }
-
-                venuesWithEmail.Add(venueDetails);
-            }
-
-            WriteVenuesToFile(venuesWithEmail.ToArray());
-
-            Exit();
+            GetVenueDetails(venues, venueDetailsList);
+            WriteVenuesToFile(venueDetailsList.ToArray());
         }
 
         private static void WriteVenuesToFile(VenueDetails[] venues)
